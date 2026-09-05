@@ -2,7 +2,8 @@ use std::env;
 use std::io::{BufReader, Read, Write };
 use std::process::{Command,Stdio}; 
 
-use crossterm::terminal ; 
+use crossterm::{event::{self, Event, KeyCode}, terminal, } ; 
+use std::time::Duration;
 
 // const WIDTH : usize = 80 ;  crossterm take full width of terminal 
 // const HEIGHT : usize = 45 ; 
@@ -140,6 +141,8 @@ fn main() {
         // terminal printer init 
         let stdout_terminal  = std::io::stdout();
         let mut terminal = stdout_terminal.lock();
+        
+        crossterm::terminal::enable_raw_mode().expect("failed to enable raw cmode");
         write!(terminal, "\x1b[2J\x1b[H\x1b[?25l").unwrap();
         terminal.flush().unwrap();
 
@@ -149,6 +152,27 @@ fn main() {
             match reader.read_exact(&mut frame){ 
                 Ok(_) => { 
                     frame_number += 1 ; 
+
+                    // check keyboard without blocking video playback
+                    if event::poll(Duration::from_millis(0)).unwrap() {
+
+                        if let Event::Key(key) = event::read().unwrap() {
+
+                            match key.code {
+
+                                // q quits playback
+                                KeyCode::Char('q') => {
+
+                                    output.kill()
+                                        .expect("failed to stop ffmpeg");
+
+                                    break;
+                                }
+
+                                _ => {}
+                            }
+                        }
+                    }
                     let ascii = frame_to_ascii(&frame, width, height) ; 
 
                     // move cursor to top left 
@@ -194,6 +218,7 @@ fn main() {
         write!(terminal,"\x1b[0m\x1b[?25\x1b[?1049l").unwrap();
         terminal.flush().unwrap();
         drop(terminal);
+        crossterm::terminal::disable_raw_mode().expect("failed to disable raw mode");
 
 
         // Ffmpeg is at the end 

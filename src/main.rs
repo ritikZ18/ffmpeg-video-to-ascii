@@ -10,7 +10,8 @@ use std::time::Duration;
 const CHANNELS : usize = 3 ; 
 
 // now real game begin 
-const ASCII_CHARS : &[u8] = b" .:-=+*#%@";
+// const ASCII_CHARS : &[u8] = b" .:-=+*#%@";
+const ASCII_CHARS : &[u8] = b" .,:;irsXA253hMHGS#9B&@";
 
 // FAST NASI HELPER 
 fn push_u8_number(output: &mut Vec<u8>, value: u8) {
@@ -102,6 +103,16 @@ fn frame_to_ascii(frame: &[u8], width: usize, height: usize ) -> Vec<u8> {
 
             // rgb -> brightness
             let brightness = (2126 * r as u32 + 7152 * g  as u32 + 722 * b as u32) / 10000 ;
+
+            // small contrast boost (optional)
+            let brightness = if brightness > 128 {
+                128 + ((brightness - 128) * 115 / 100)
+            } else {
+                128 - ((128 - brightness) * 115 / 100)
+            };
+
+            let brightness = brightness.min(255);
+
 
             // brightness -> ascii 
             let char_index = brightness as usize * ( ASCII_CHARS.len() - 1 ) / 255 ; 

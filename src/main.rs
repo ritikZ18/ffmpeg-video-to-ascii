@@ -1,6 +1,6 @@
 use std::env; 
-use std::io::{BufReader, Read}
-use std::process::(Command,Stdio); 
+use std::io::{BufReader, Read};
+use std::process::{Command,Stdio}; 
 
 const WIDTH : usize = 80 ; 
 const HEIGHT : usize = 45 ; 
@@ -52,38 +52,40 @@ fn main() {
             .spawn()
             .expect("failed to start ffmpeg");
 
-        if !output.status.success(){ 
-                eprintln!("FFmpeg failed:");
+        // if !output.status.success(){ 
+        //         eprintln!("FFmpeg failed:");
 
-                eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+        //         eprintln!("{}", String::from_utf8_lossy(&output.stderr));
 
-                std::process::exit(1);
-        }
+        //         std::process::exit(1);
+        // }
 
         // we will capture all ffmpeg raw bytes to out implementation in rust 
         let stdout  = output 
             .stdout
             .take()
-            .expect("failed to open ffmpeg stdout ")
+            .expect("failed to open ffmpeg stdout ");
         
         
         let mut reader = BufReader::new(stdout);
 
         // strict allocation 1 frame buffer ourselve ( to avoid rx vec<u8> from output.stdout)
         // reuse the same memory from each frame 
-        let mut frame = output.stdout ; 
-        println!("Recieved RGB bytes : {}", frame.len());
+        let mut frame = vec![0u8; expected_size]; 
+        // println!("Recieved RGB bytes : {}", frame.len());
 
      
         // tracking complete video framed recieved 
-        let mut frame_numer : usize = 0 ; 
+        let mut frame_number : usize = 0 ; 
         loop { 
 
 
             match reader.read_exact(&mut frame){ 
-                ok(_) => { 
-                    frame_number += 1 
+                Ok(_) => { 
+                    frame_number += 1 ;
+                    if frame_number == 1 {
 
+                    println!("Recieved RGB bytes : {}", frame.len());
 
                     // for frame == 1. check what we recieved compared to expected RGB 
 
@@ -140,7 +142,7 @@ fn main() {
 
                     let idx = ( center_y * WIDTH + center_x) * CHANNELS ; 
 
-                     let r = frame[idx];
+                    let r = frame[idx];
                     let g = frame[idx + 1];
                     let b = frame[idx + 2];
 
@@ -152,10 +154,11 @@ fn main() {
                         b
                     );
                 }
+            }
 
                 Err(error) => { 
 
-                    if error.kind() == std::io::ErrorKind:: unexpectedEof{ 
+                    if error.kind() == std::io::ErrorKind:: UnexpectedEof{ 
                         println!();
                         println!("Video Finish");
                         break;
@@ -172,10 +175,10 @@ fn main() {
             .wait()
             .expect("failed waiting of ffmpeg");
         
-        if !status.success( 
+        if !status.success(){ 
             eprintln!("ffmpeg failed status: {status}");
             std::process::exit(1);
-        )
+        }
 
      println!("FFmpeg exited with: {status}");
     println!("Total frames received: {frame_number}");

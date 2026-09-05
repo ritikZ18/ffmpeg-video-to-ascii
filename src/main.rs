@@ -1,10 +1,49 @@
 use std::env; 
-use std::io::{BufReader, Read};
+use std::io::{BufReader, Read, Write };
 use std::process::{Command,Stdio}; 
 
 const WIDTH : usize = 80 ; 
 const HEIGHT : usize = 45 ; 
 const CHANNELS : usize = 3 ; 
+
+// now real game begin 
+const ASCII_CHARS : &[u8] = b" .:-=+*#%@";
+
+// terminal printer 
+// --> FLOW <---
+//          R G B
+//           ↓
+//          brightness 0..255
+//           ↓
+//          ASCII index
+//           ↓
+//          " .:-=+*#%@"
+
+fn framt_to_ascii(frame: &[u8]) -> Vec<u8> { 
+    
+    let mut output = Vec:: with_capacity(WIDTH * HEIGHT + HEIGHT);
+
+    for y in 0..HEIGHT { 
+        for x in 0..WIDTH { 
+            let idx = ( y * WIDTH + x) * CHANNELS ;
+
+            let r = frame[idx] as u32 ;
+            let g = frame[idx + 1 ] as u32 ;
+            let b = frame[idx + 2 ] as u32 ;
+
+            // rgb -> brightness
+            let brightness = (2126 * r + 7152 * g + 722 * b) / 10000 ;
+
+            // brightness -> ascii 
+            let char_index = brightness as usize * ( ASCII_CHARS.len() - 1 ) / 255 ; 
+            output.push(ASCII_CHARS[char_index]);
+        }
+        output.push(b'\n');
+    }
+    output
+}
+
+
 
 fn main() {
 
@@ -77,83 +116,96 @@ fn main() {
      
         // tracking complete video framed recieved 
         let mut frame_number : usize = 0 ; 
+        // terminal printer init 
+        let stdout_terminal  = std::io::stdout();
+        let mut terminal = stdout_terminal.lock();
+        write!(terminal, "\x1b[2J\x1b[H\x1b[?25l").unwrap();
         loop { 
 
 
             match reader.read_exact(&mut frame){ 
                 Ok(_) => { 
-                    frame_number += 1 ;
-                    if frame_number == 1 {
+                    frame_number += 1 ; 
+                    let ascii = framt_to_ascii(&frame) ; 
 
-                    println!("Recieved RGB bytes : {}", frame.len());
-
-                    // for frame == 1. check what we recieved compared to expected RGB 
-
-                    println!("recieved RGB bytes : {}", frame.len()); 
-                       if frame.len() != expected_size { 
-                            eprintln!(
-                                "ERROR : expected {} bytes but reoieved {}",
-                                expected_size,
-                                frame.len()
-                            );
-                            std::process::exit(1);
-                        }
-                        println!("Frame size verification : PASSED ") ; 
+                    // move cursor to top left 
+                    write!(terminal, "\x1b[H").unwrap(); 
+                    // draw complete frame 
+                    terminal.write_all(&ascii).unwrap();
+                    terminal.flush().unwrap();
 
 
-                    // render first pixel 
-                    let r = frame[0];
-                    let g = frame[1];
-                    let b = frame[2];
+                // if frame_number == 1 {
+
+                //     println!("Recieved RGB bytes : {}", frame.len());
+
+                //     // for frame == 1. check what we recieved compared to expected RGB 
+
+                //     println!("recieved RGB bytes : {}", frame.len()); 
+                //        if frame.len() != expected_size { 
+                //             eprintln!(
+                //                 "ERROR : expected {} bytes but reoieved {}",
+                //                 expected_size,
+                //                 frame.len()
+                //             );
+                //             std::process::exit(1);
+                //         }
+                //         println!("Frame size verification : PASSED ") ; 
+
+
+                //     // render first pixel 
+                //     let r = frame[0];
+                //     let g = frame[1];
+                //     let b = frame[2];
                     
-                    println!("First pixel:");
-                    println!("  R = {r}");
-                    println!("  G = {g}");
-                    println!("  B = {b}");
+                //     println!("First pixel:");
+                //     println!("  R = {r}");
+                //     println!("  G = {g}");
+                //     println!("  B = {b}");
 
-                    // center pixel 
-                    let center_x = WIDTH / 2 ; 
-                    let center_y = HEIGHT / 2 ; 
+                //     // center pixel 
+                //     let center_x = WIDTH / 2 ; 
+                //     let center_y = HEIGHT / 2 ; 
 
-                    let idx = (center_y * WIDTH + center_x) * CHANNELS ; 
+                //     let idx = (center_y * WIDTH + center_x) * CHANNELS ; 
 
-                    let r = frame[idx];
-                    let g = frame[idx + 1];
-                    let b = frame[idx + 2];
+                //     let r = frame[idx];
+                //     let g = frame[idx + 1];
+                //     let b = frame[idx + 2];
 
-                    println!();
-                    println!("Center pixel ({center_x}, {center_y}):");
-                    println!("  R = {r}");
-                    println!("  G = {g}");
-                    println!("  B = {b}");
+                //     println!();
+                //     println!("Center pixel ({center_x}, {center_y}):");
+                //     println!("  R = {r}");
+                //     println!("  G = {g}");
+                //     println!("  B = {b}");
 
-                    println!();
-                    println!("FFmpeg -> Rust RGB frame pipeline works.");
+                //     println!();
+                //     println!("FFmpeg -> Rust RGB frame pipeline works.");
 
 
-                }
+                // }
 
                 // we every 30 frames print current  center pixel 
-                if frame_number % 30 == 0 { 
+                // if frame_number % 30 == 0 { 
                    
-                    let center_x = WIDTH / 2 ; 
-                    let center_y = HEIGHT / 2 ; 
+                //     let center_x = WIDTH / 2 ; 
+                //     let center_y = HEIGHT / 2 ; 
 
 
-                    let idx = ( center_y * WIDTH + center_x) * CHANNELS ; 
+                //     let idx = ( center_y * WIDTH + center_x) * CHANNELS ; 
 
-                    let r = frame[idx];
-                    let g = frame[idx + 1];
-                    let b = frame[idx + 2];
+                //     let r = frame[idx];
+                //     let g = frame[idx + 1];
+                //     let b = frame[idx + 2];
 
-                    println!(
-                        "Frame {:6} | center RGB = ({:3}, {:3}, {:3})",
-                        frame_number,
-                        r,
-                        g,
-                        b
-                    );
-                }
+                //     println!(
+                //         "Frame {:6} | center RGB = ({:3}, {:3}, {:3})",
+                //         frame_number,
+                //         r,
+                //         g,
+                //         b
+                //     );
+                // }
             }
 
                 Err(error) => { 
@@ -176,6 +228,8 @@ fn main() {
             .expect("failed waiting of ffmpeg");
         
         if !status.success(){ 
+            write!(terminal, "\x1b[?25h").unwrap();
+            terminal.flush().unwrap();
             eprintln!("ffmpeg failed status: {status}");
             std::process::exit(1);
         }

@@ -2,8 +2,10 @@ use std::env;
 use std::io::{BufReader, Read, Write };
 use std::process::{Command,Stdio}; 
 
-const WIDTH : usize = 80 ; 
-const HEIGHT : usize = 45 ; 
+use crossterm::terminal ; 
+
+// const WIDTH : usize = 80 ;  crossterm take full width of terminal 
+// const HEIGHT : usize = 45 ; 
 const CHANNELS : usize = 3 ; 
 
 // now real game begin 
@@ -19,38 +21,50 @@ const ASCII_CHARS : &[u8] = b" .:-=+*#%@";
 //           ↓
 //          " .:-=+*#%@"
 
-fn frame_to_ascii(frame: &[u8]) -> Vec<u8> { 
+fn frame_to_ascii(frame: &[u8], width: usize, height: usize ) -> Vec<u8> { 
     
-    let mut output = Vec::with_capacity(WIDTH * HEIGHT * 20 );
+    let mut output = Vec::with_capacity(width * height * 20 );
 
-    for y in 0..HEIGHT { 
-        for x in 0..WIDTH { 
-            let idx = ( y * WIDTH + x) * CHANNELS ;
+    for y in (0..height).step_by(2) { 
+        for x in 0..width { 
+            let idx = ( y * width + x) * CHANNELS ;
 
             let r = frame[idx] as u32 ;
             let g = frame[idx + 1 ] as u32 ;
             let b = frame[idx + 2 ] as u32 ;
 
-            // rgb -> brightness
-            let brightness = (2126 * r + 7152 * g + 722 * b) / 10000 ;
+            // btm pixels 
+            let bottom_y = if y + 1 < height { 
+                y + 1 
+            } else { y }; 
 
-            // brightness -> ascii 
-            let char_index = brightness as usize * ( ASCII_CHARS.len() - 1 ) / 255 ; 
-            let ascii_char = ASCII_CHARS[char_index] as char ; 
-            // output.push(ASCII_CHARS[char_index]);
+            let bottom_idx = (bottom_y * width + x ) * CHANNELS;
+            let bottom_r = frame[bottom_idx];
+            let bottom_g = frame[bottom_idx + 1 ];
+            let bottom_b = frame[bottom_idx + 2 ];
+
+            // // rgb -> brightness
+            // let brightness = (2126 * r + 7152 * g + 722 * b) / 10000 ;
+
+            // // brightness -> ascii 
+            // let char_index = brightness as usize * ( ASCII_CHARS.len() - 1 ) / 255 ; 
+            // let ascii_char = ASCII_CHARS[char_index] as char ; 
+            // // output.push(ASCII_CHARS[char_index]);
+
+            
 
             write!(
                 &mut output ,
-                "\x1b[38;2;{};{};{}m{}", 
-                r, g , b, 
-                ascii_char
+                  "\x1b[38;2;{};{};{}m\x1b[48;2;{};{};{}m▀",
+                r,g,b,
+                bottom_r, bottom_g , bottom_b
             ).unwrap();
         }
-        output.push(b'\n');
+        // output.push(b'\n');
+        output.extend_from_slice(b"\x1b[0m\n");
     }
 
     // reset terminal color 4
-    output.extend_from_slice(b"\x1b[0m");
     output
 }
 
@@ -69,26 +83,30 @@ fn main() {
 
 
      let video_path = &args[1];
-     let expected_size = WIDTH * HEIGHT * CHANNELS ;
+     let (cols, rows) = terminal::size() .unwrap_or((80,24));
+     let width = cols as usize ; 
+     let height  = rows.saturating_sub(1) as usize * 2 ; 
+
+
+     let expected_size = width * height  * CHANNELS ;
 
     println!("Input video: {video_path}");
-    println!("Requested frame: {WIDTH}x{HEIGHT}");
+    println!("Requested frame: {width}x{height}");
     println!("Expected RGB bytes: {expected_size}");
 
-    let scale = format!("scale={WIDTH}:{HEIGHT}");
+   let scale = format!( "scale={width}:{height}:force_original_aspect_ratio=decrease, pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black"
+    );
 
     // new implementation : for continuos frame render .spawn()
     let mut output = Command::new("ffmpeg")
             .args([
                 "-v",
                 "error",
+                "-re",  // real video
                 "-i",
                 video_path,
                 "-vf",
                 &scale,
-                // removing the below, to see everyframe in video
-                // "-frames:v",
-                // "1",
                 "-pix_fmt",
                 "rgb24",
                 "-f",
@@ -102,15 +120,7 @@ fn main() {
             .spawn()
             .expect("failed to start ffmpeg");
 
-        // if !output.status.success(){ 
-        //         eprintln!("FFmpeg failed:");
-
-        //         eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-
-        //         std::process::exit(1);
-        // }
-
-        // we will capture all ffmpeg raw bytes to out implementation in rust 
+    
         let stdout  = output 
             .stdout
             .take()
@@ -131,92 +141,23 @@ fn main() {
         let stdout_terminal  = std::io::stdout();
         let mut terminal = stdout_terminal.lock();
         write!(terminal, "\x1b[2J\x1b[H\x1b[?25l").unwrap();
+        terminal.flush().unwrap();
+
         loop { 
 
 
             match reader.read_exact(&mut frame){ 
                 Ok(_) => { 
                     frame_number += 1 ; 
-                    let ascii = frame_to_ascii(&frame) ; 
+                    let ascii = frame_to_ascii(&frame, width, height) ; 
 
                     // move cursor to top left 
                     write!(terminal, "\x1b[H").unwrap(); 
+
                     // draw complete frame 
                     terminal.write_all(&ascii).unwrap();
                     terminal.flush().unwrap();
 
-
-                // if frame_number == 1 {
-
-                //     println!("Recieved RGB bytes : {}", frame.len());
-
-                //     // for frame == 1. check what we recieved compared to expected RGB 
-
-                //     println!("recieved RGB bytes : {}", frame.len()); 
-                //        if frame.len() != expected_size { 
-                //             eprintln!(
-                //                 "ERROR : expected {} bytes but reoieved {}",
-                //                 expected_size,
-                //                 frame.len()
-                //             );
-                //             std::process::exit(1);
-                //         }
-                //         println!("Frame size verification : PASSED ") ; 
-
-
-                //     // render first pixel 
-                //     let r = frame[0];
-                //     let g = frame[1];
-                //     let b = frame[2];
-                    
-                //     println!("First pixel:");
-                //     println!("  R = {r}");
-                //     println!("  G = {g}");
-                //     println!("  B = {b}");
-
-                //     // center pixel 
-                //     let center_x = WIDTH / 2 ; 
-                //     let center_y = HEIGHT / 2 ; 
-
-                //     let idx = (center_y * WIDTH + center_x) * CHANNELS ; 
-
-                //     let r = frame[idx];
-                //     let g = frame[idx + 1];
-                //     let b = frame[idx + 2];
-
-                //     println!();
-                //     println!("Center pixel ({center_x}, {center_y}):");
-                //     println!("  R = {r}");
-                //     println!("  G = {g}");
-                //     println!("  B = {b}");
-
-                //     println!();
-                //     println!("FFmpeg -> Rust RGB frame pipeline works.");
-
-
-                // }
-
-                // we every 30 frames print current  center pixel 
-                // if frame_number % 30 == 0 { 
-                   
-                //     let center_x = WIDTH / 2 ; 
-                //     let center_y = HEIGHT / 2 ; 
-
-
-                //     let idx = ( center_y * WIDTH + center_x) * CHANNELS ; 
-
-                //     let r = frame[idx];
-                //     let g = frame[idx + 1];
-                //     let b = frame[idx + 2];
-
-                //     println!(
-                //         "Frame {:6} | center RGB = ({:3}, {:3}, {:3})",
-                //         frame_number,
-                //         r,
-                //         g,
-                //         b
-                //     );
-                // }
             }
 
                 Err(error) => { 
@@ -227,10 +168,32 @@ fn main() {
                         break;
                     }
 
-                    break ; 
+
+                    // restore terminal before printing error
+                    write!(
+                        terminal,
+                        "\x1b[0m\x1b[?25h\x1b[?1049l"
+                    )
+                    .unwrap();
+
+                    terminal.flush().unwrap();
+
+                    drop(terminal);
+
+
+                    eprintln!(
+                        "Error reading FFmpeg output: {error}"
+                    );
+
+                    std::process::exit(1);
                 }
             }
         }
+
+        // restore terminal 
+        write!(terminal,"\x1b[0m\x1b[?25\x1b[?1049l").unwrap();
+        terminal.flush().unwrap();
+        drop(terminal);
 
 
         // Ffmpeg is at the end 
@@ -239,8 +202,6 @@ fn main() {
             .expect("failed waiting of ffmpeg");
         
         if !status.success(){ 
-            write!(terminal, "\x1b[?25h").unwrap();
-            terminal.flush().unwrap();
             eprintln!("ffmpeg failed status: {status}");
             std::process::exit(1);
         }

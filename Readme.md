@@ -9,4 +9,34 @@ frames into terminal ASCII
         --> Reason : thosands of terminal write per frame will kill performance 
         --> frame -> build -> one write.all() -> flush()
         --> and we will not clear terminal frame 
-        
+
+                                    input.mp4
+                                        │
+                                        ▼
+                                    read terminal dimensions
+                                        │
+                                        ▼
+                                    cols × rows*2
+                                        │
+                                        ▼
+                                    FFmpeg
+                                        │
+                                        ├── preserve aspect ratio
+                                        ├── scale
+                                        ├── RGB24
+                                        └── source-rate pacing
+                                            │
+                                            ▼
+                                        RGB frame
+                                            │
+                                        ┌─────┴─────┐
+                                        │           │
+                                    top RGB     bottom RGB
+                                        │           │
+                                    foreground background
+                                        └─────┬─────┘
+                                            ▼
+                                            ▀
+                                            │
+                                            ▼
+                                    truecolor terminal

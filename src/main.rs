@@ -19,9 +19,9 @@ const ASCII_CHARS : &[u8] = b" .:-=+*#%@";
 //           ↓
 //          " .:-=+*#%@"
 
-fn framt_to_ascii(frame: &[u8]) -> Vec<u8> { 
+fn frame_to_ascii(frame: &[u8]) -> Vec<u8> { 
     
-    let mut output = Vec:: with_capacity(WIDTH * HEIGHT + HEIGHT);
+    let mut output = Vec::with_capacity(WIDTH * HEIGHT * 20 );
 
     for y in 0..HEIGHT { 
         for x in 0..WIDTH { 
@@ -36,10 +36,21 @@ fn framt_to_ascii(frame: &[u8]) -> Vec<u8> {
 
             // brightness -> ascii 
             let char_index = brightness as usize * ( ASCII_CHARS.len() - 1 ) / 255 ; 
-            output.push(ASCII_CHARS[char_index]);
+            let ascii_char = ASCII_CHARS[char_index] as char ; 
+            // output.push(ASCII_CHARS[char_index]);
+
+            write!(
+                &mut output ,
+                "\x1b[38;2;{};{};{}m{}", 
+                r, g , b, 
+                ascii_char
+            ).unwrap();
         }
         output.push(b'\n');
     }
+
+    // reset terminal color 4
+    output.extend_from_slice(b"\x1b[0m");
     output
 }
 
@@ -126,7 +137,7 @@ fn main() {
             match reader.read_exact(&mut frame){ 
                 Ok(_) => { 
                     frame_number += 1 ; 
-                    let ascii = framt_to_ascii(&frame) ; 
+                    let ascii = frame_to_ascii(&frame) ; 
 
                     // move cursor to top left 
                     write!(terminal, "\x1b[H").unwrap(); 

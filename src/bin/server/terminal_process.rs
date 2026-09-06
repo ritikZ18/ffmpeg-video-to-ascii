@@ -1,4 +1,5 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+
 use portable_pty::{
     native_pty_system,
     ChildKiller,
@@ -6,7 +7,7 @@ use portable_pty::{
     PtySize,
     PtySystem,
 };
-use std::io::Read;
+use std::{io::Read, path::PathBuf,};
 use tokio::sync::mpsc;
 
 pub struct TerminalProcess {
@@ -20,6 +21,46 @@ impl TerminalProcess {
         cols: u16,
         rows: u16,
     ) -> Result<Self> {
+
+         // Cargo project root:
+        // ~/development/ui-ux/ffmpeg-terminal
+        let project_root =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+
+        let mainframe_path =
+            project_root
+                .join("target")
+                .join("release")
+                .join("ffmpeg-terminal");
+
+
+        let video_path =
+            project_root.join("input.mp4");
+
+
+        println!(
+            "Launching mainframe: {}",
+            mainframe_path.display()
+        );
+
+
+        if !mainframe_path.exists() {
+            bail!(
+                "mainframe binary missing: {}",
+                mainframe_path.display()
+            );
+        }
+
+
+        if !video_path.exists() {
+            bail!(
+                "video missing: {}",
+                video_path.display()
+            );
+        }
+
+
         let pty_system = native_pty_system();
 
         // This becomes terminal::size() inside main.rs
@@ -32,12 +73,14 @@ impl TerminalProcess {
             })
             .context("failed to create PTY")?;
 
-        let mut cmd =
+          let mut cmd =
             CommandBuilder::new(
-                "./target/release/ffmpeg-terminal"
+                mainframe_path.as_os_str()
             );
+            
+        cmd.cwd(project_root.as_os_str());
+        cmd.arg(video_path.as_os_str());
 
-        cmd.arg("input.mp4");
         cmd.arg("--mode");
         cmd.arg(mode);
 

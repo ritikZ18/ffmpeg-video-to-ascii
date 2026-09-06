@@ -1,0 +1,235 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: #020403;
+    overflow: hidden;
+}
+
+body {
+    font-family:
+        "Courier New",
+        Consolas,
+        monospace;
+
+    color: #66ff99;
+}
+
+#terminal {
+    width: 100vw;
+    height: 100vh;
+
+    padding: 32px;
+
+    position: relative;
+    z-index: 2;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.dim {
+    opacity: 0.45;
+}
+
+#boot-log {
+    white-space: pre-line;
+    line-height: 1.8;
+}
+
+#ready-panel {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    text-align: center;
+}
+
+.ready {
+    font-size: clamp(28px, 5vw, 72px);
+    letter-spacing: 0.18em;
+
+    text-shadow:
+        0 0 8px currentColor,
+        0 0 20px currentColor;
+
+    animation: pulse 1.7s infinite;
+}
+
+button {
+    background: transparent;
+    border: 0;
+
+    color: inherit;
+
+    font-family: inherit;
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+button:hover {
+    text-shadow:
+        0 0 10px currentColor,
+        0 0 22px currentColor;
+}
+
+.hint {
+    margin-top: 30px;
+
+    font-size: 12px;
+
+    opacity: 0.4;
+}
+
+#mode-screen {
+    position: absolute;
+
+    width: min(750px, 90vw);
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+}
+
+.options {
+    margin-top: 40px;
+
+    line-height: 3;
+}
+
+.options div {
+    opacity: 0.5;
+}
+
+.options .selected {
+    opacity: 1;
+
+    text-shadow: 0 0 10px currentColor;
+}
+
+#player-screen {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+}
+
+header,
+footer {
+    display: flex;
+    justify-content: space-between;
+
+    flex-shrink: 0;
+
+    font-size: 13px;
+
+    opacity: 0.7;
+}
+
+#render-area {
+    flex: 1;
+
+    display: grid;
+    place-items: center;
+
+    min-height: 0;
+}
+
+#frame {
+    margin: 0;
+
+    font-size: 12px;
+    line-height: 1;
+
+    text-align: center;
+
+    text-shadow: 0 0 6px currentColor;
+}
+
+#audio-control {
+    cursor: pointer;
+}
+
+
+/* CRT scanlines */
+
+.crt {
+    pointer-events: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10;
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 2px,
+            rgba(0, 0, 0, 0.18) 3px,
+            rgba(0, 0, 0, 0.18) 4px
+        );
+
+    opacity: 0.45;
+}
+
+
+/* tiny screen flicker */
+
+body::after {
+    content: "";
+
+    pointer-events: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(80, 255, 130, 0.02);
+
+    animation: flicker 0.13s infinite;
+
+    z-index: 9;
+}
+
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.55;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+
+@keyframes flicker {
+
+    0% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.07;
+    }
+
+    100% {
+        opacity: 0.22;
+    }
+}

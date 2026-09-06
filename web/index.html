@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Software Engineer Happy Dance</title>
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<div class="crt"></div>
+
+<main id="terminal">
+
+    <section id="boot-screen">
+
+        <div id="boot-log"></div>
+
+        <div id="ready-panel" class="hidden">
+            <p class="ready">ARE YOU READY?</p>
+
+            <button id="enter-button">
+                [ ENTER SYSTEM ]
+            </button>
+
+            <p class="hint">
+                PRESS ENTER
+            </p>
+        </div>
+
+    </section>
+
+
+    <section id="mode-screen" class="hidden">
+
+        <p class="dim">
+            RUST//FRAME PLAYBACK PROTOCOL
+        </p>
+
+        <p>
+            > SELECT EXPERIENCE
+        </p>
+
+        <div class="options">
+
+            <div data-mode="visual">
+                [1] VISUAL ONLY
+                <span class="dim"> // AUDIO MUTED</span>
+            </div>
+
+            <div
+                data-mode="full"
+                class="selected"
+            >
+                > [2] FULL EXPERIENCE
+                <span class="dim"> // DEFAULT</span>
+            </div>
+
+        </div>
+
+        <p class="hint">
+            [ENTER] EXECUTE
+        </p>
+
+    </section>
+
+
+    <section id="player-screen" class="hidden">
+
+        <header>
+            <span>RUST//FRAME</span>
+
+            <span id="status">
+                INITIALIZING
+            </span>
+        </header>
+
+        <div id="render-area">
+
+            <pre id="frame">
+WAITING FOR RUST RENDERER...
+
+        ██████████
+        ██      ██
+        ██ RGB  ██
+        ██  ↓   ██
+        ██ ANSI ██
+        ██      ██
+        ██████████
+            </pre>
+
+        </div>
+
+        <footer>
+
+            <span>
+                [SPACE] PAUSE
+                &nbsp;&nbsp;
+                [R] RESTART
+                &nbsp;&nbsp;
+                [Q] EXIT
+            </span>
+
+            <span id="audio-control">
+                [M] AUDIO: ON
+            </span>
+
+        </footer>
+
+    </section>
+
+</main>
+
+
+<audio
+    id="audio"
+    src="/media/input.mp4"
+    preload="auto">
+</audio>
+
+<script src="/app.js"></script>
+
+</body>
+</html>

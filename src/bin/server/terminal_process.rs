@@ -36,7 +36,9 @@ impl TerminalProcess {
 
 
         let video_path =
-            project_root.join("input.mp4");
+            project_root
+            .join("assets")
+            .join("input.mp4");
 
 
         println!(

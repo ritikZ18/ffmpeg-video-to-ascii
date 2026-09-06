@@ -127,6 +127,10 @@ async fn main(){
             "/assets/input.mp4",
             ServeFile::new("input.mp4"),
         )
+        .nest_service(
+        "/assets",
+        ServeDir::new("assets"),
+    )
         .fallback_service(ServeDir::new("web"));
 
     let listener = TcpListener::bind(("0.0.0.0", port))

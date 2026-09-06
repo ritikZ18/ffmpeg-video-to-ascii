@@ -1,129 +1,243 @@
-const bootScreen = document.querySelector("#boot-screen");
-const bootLog = document.querySelector("#boot-log");
-const readyPanel = document.querySelector("#ready-panel");
+// ======================================================
+// DOM
+// ======================================================
 
-const modeScreen = document.querySelector("#mode-screen");
-const playerScreen = document.querySelector("#player-screen");
+const bootScreen =
+    document.querySelector(
+        "#boot-screen"
+    );
 
-const enterButton = document.querySelector("#enter-button");
-const exitControl = document.querySelector("#exit-control");
+const bootLog =
+    document.querySelector(
+        "#boot-log"
+    );
 
-const audio = document.querySelector("#audio");
-const audioControl = document.querySelector("#audio-control");
+const readyPanel =
+    document.querySelector(
+        "#ready-panel"
+    );
 
-const status = document.querySelector("#status");
+const modeScreen =
+    document.querySelector(
+        "#mode-screen"
+    );
+
+const playerScreen =
+    document.querySelector(
+        "#player-screen"
+    );
+
+const enterButton =
+    document.querySelector(
+        "#enter-button"
+    );
+
+const exitControl =
+    document.querySelector(
+        "#exit-control"
+    );
+
+const audio =
+    document.querySelector(
+        "#audio"
+    );
+
+const audioControl =
+    document.querySelector(
+        "#audio-control"
+    );
+
+const status =
+    document.querySelector(
+        "#status"
+    );
 
 
-let state = "boot";
-let mode = "full";
+
+// ======================================================
+// APPLICATION STATE
+// ======================================================
+
+let state =
+    "boot";
+
+let mode =
+    "full";
+
 
 
 // ======================================================
 // TERMINAL STATE
 // ======================================================
 
-let terminal = null;
-let fitAddon = null;
-let webglAddon = null;
-let ws = null;
+let terminal =
+    null;
+
+let fitAddon =
+    null;
+
+let webglAddon =
+    null;
+
+let ws =
+    null;
 
 
-// Keep mainframe rendering workload controlled.
-const MAX_COLS = 180;
-const MAX_ROWS = 58;
+
+// Browser workload budget.
+//
+// Rust receives these dimensions
+// through:
+//
+// /ws?cols=X&rows=Y
+//
+// Keep this intentionally bounded because
+// every additional cell becomes renderer work.
+
+const MAX_COLS =
+    180;
+
+const MAX_ROWS =
+    58;
 
 
-// Geometry gets frozen once PTY starts.
-let lockedCols = 0;
-let lockedRows = 0;
+
+// PTY dimensions are frozen once playback begins.
+
+let lockedCols =
+    0;
+
+let lockedRows =
+    0;
+
 
 
 // ======================================================
-// TERMINAL DATA BUFFERING
+// TERMINAL OUTPUT BUFFER
 // ======================================================
 
-let pendingChunks = [];
-let pendingBytes = 0;
+// WebSocket may split one terminal frame
+// into several binary messages.
+//
+// Collect them and feed xterm at most once
+// per animation frame.
 
-let writeScheduled = false;
-let terminalWriteBusy = false;
+let pendingChunks =
+    [];
+
+let pendingBytes =
+    0;
+
+let writeScheduled =
+    false;
+
+let terminalWriteBusy =
+    false;
+
 
 
 // ======================================================
 // AUDIO STATE
 // ======================================================
 
-let audioStarted = false;
-let rendererStarted = false;
+let audioStarted =
+    false;
 
-let startupProbe = "";
+let audioPrimed =
+    false;
+
+let rendererStarted =
+    false;
+
+
+
+// Rust main.rs enters alternate-screen mode
+// using:
+//
+// ESC [?1049h
+//
+// We watch startup output for that marker.
+
+let startupProbe =
+    "";
 
 const ansiDecoder =
     new TextDecoder();
+
+
+
+// ======================================================
+// BOOT DATA
+// ======================================================
+
+const bootMessages = [
+
+    "INITIALIZING PIPELINE…",
+
+    "PIPELINE READY"
+
+];
+
 
 
 // ======================================================
 // BOOT
 // ======================================================
 
-const bootMessages = [
-
-    "RUST//FRAME TERMINAL v0.1",
-    "",
-
-    "> initializing runtime...",
-    "> ffmpeg pipeline .............. OK",
-    "> rgb24 decoder ................ OK",
-    "> ansi renderer ................ OK",
-    "> websocket interface .......... STANDBY",
-    "> media subsystem .............. OK",
-
-    "",
-
-    "INITIALIZATION COMPLETE."
-];
-
-
 async function boot() {
 
-    for (const line of bootMessages) {
+    bootLog.textContent =
+        "";
 
-        bootLog.textContent +=
-            line + "\n";
+
+    for (
+        const line
+        of bootMessages
+    ) {
+
+        bootLog.textContent =
+            line;
 
 
         await sleep(
 
-            line === ""
-
-                ? 120
-
-                : 150 +
-                  Math.random() * 220
+            320
 
         );
     }
 
 
-    await sleep(400);
-
-
-    readyPanel.classList.remove(
-        "hidden"
+    await sleep(
+        280
     );
 
 
-    state = "ready";
+    readyPanel
+        .classList
+        .remove(
+            "hidden"
+        );
+
+
+    state =
+        "ready";
 }
+
 
 
 function sleep(ms) {
 
     return new Promise(
+
         resolve =>
-            setTimeout(resolve, ms)
+            setTimeout(
+                resolve,
+                ms
+            )
+
     );
 }
+
 
 
 // ======================================================
@@ -132,65 +246,161 @@ function sleep(ms) {
 
 function enterSystem() {
 
-    if (state !== "ready") {
+    if (
+        state !==
+        "ready"
+    ) {
+
         return;
     }
 
 
-    state = "mode";
+    state =
+        "mode";
 
 
-    bootScreen.classList.add(
-        "hidden"
-    );
+    bootScreen
+        .classList
+        .add(
+            "hidden"
+        );
 
 
-    modeScreen.classList.remove(
-        "hidden"
-    );
+    modeScreen
+        .classList
+        .remove(
+            "hidden"
+        );
 }
 
 
+
 // ======================================================
-// MODE SELECT
+// SELECT MODE
 // ======================================================
 
-function selectMode(selectedMode) {
+function selectMode(
+    selectedMode
+) {
 
-    mode = selectedMode;
+    mode =
+        selectedMode;
 
 
     document
         .querySelectorAll(
             "[data-mode]"
         )
-        .forEach(option => {
+        .forEach(
+            option => {
 
-            const selected =
-                option.dataset.mode === mode;
-
-
-            option.classList.toggle(
-                "selected",
-                selected
-            );
+                const selected =
+                    option.dataset.mode ===
+                    mode;
 
 
-            const selector =
-                option.querySelector(
-                    ".selector"
-                );
+                option
+                    .classList
+                    .toggle(
+                        "selected",
+                        selected
+                    );
 
 
-            if (selector) {
+                const selector =
+                    option.querySelector(
+                        ".selector"
+                    );
 
-                selector.textContent =
-                    selected
-                        ? ">"
-                        : " ";
+
+                if (
+                    selector
+                ) {
+
+                    selector.textContent =
+                        selected
+
+                            ? ">"
+
+                            : " ";
+
+                }
             }
-        });
+        );
 }
+
+
+
+// ======================================================
+// AUDIO PRIMING
+// ======================================================
+//
+// Browsers usually require audio playback to begin
+// inside an explicit user gesture.
+//
+// startExperience() is triggered by Enter/click,
+// so we start the soundtrack silently here.
+//
+// When Rust actually enters alternate-screen mode,
+// the track is rewound and unmuted.
+//
+// ======================================================
+
+async function primeAudio() {
+
+    if (
+        mode !==
+        "full"
+    ) {
+
+        return;
+    }
+
+
+    try {
+
+        audio.pause();
+
+        audio.currentTime =
+            0;
+
+        audio.muted =
+            true;
+
+
+        await audio.play();
+
+
+        audioStarted =
+            true;
+
+        audioPrimed =
+            true;
+
+
+        console.log(
+            "AUDIO PRIMED"
+        );
+
+
+    } catch (
+        error
+    ) {
+
+        audioStarted =
+            false;
+
+        audioPrimed =
+            false;
+
+
+        console.warn(
+            "Audio prime failed:",
+            error
+        );
+    }
+}
+
 
 
 // ======================================================
@@ -199,92 +409,93 @@ function selectMode(selectedMode) {
 
 async function startExperience() {
 
-    if (state !== "mode") {
+    if (
+        state !==
+        "mode"
+    ) {
+
         return;
     }
 
 
-    state = "playing";
+    // IMPORTANT:
+    // Do this while the user gesture is active.
+    if (
+        mode ===
+        "full"
+    ) {
 
+        await primeAudio();
 
-    // Clean previous state.
-    stopAudio();
+    } else {
 
+        stopAudio();
 
-    rendererStarted = false;
-    startupProbe = "";
-
-
-    pendingChunks = [];
-    pendingBytes = 0;
-
-    writeScheduled = false;
-    terminalWriteBusy = false;
-
-
-    // ------------------------------------------
-    // AUTO FULLSCREEN DISABLED FOR NOW
-    // ------------------------------------------
-
-    /*
-    if (!document.fullscreenElement) {
-
-        try {
-
-            await document
-                .documentElement
-                .requestFullscreen();
-
-        } catch (error) {
-
-            console.warn(
-                "Fullscreen unavailable:",
-                error
-            );
-        }
     }
-    */
 
 
-    modeScreen.classList.add(
-        "hidden"
-    );
+    state =
+        "playing";
 
 
-    playerScreen.classList.remove(
-        "hidden"
-    );
+    rendererStarted =
+        false;
+
+    startupProbe =
+        "";
+
+
+    pendingChunks =
+        [];
+
+    pendingBytes =
+        0;
+
+    writeScheduled =
+        false;
+
+    terminalWriteBusy =
+        false;
+
+
+    modeScreen
+        .classList
+        .add(
+            "hidden"
+        );
+
+
+    playerScreen
+        .classList
+        .remove(
+            "hidden"
+        );
 
 
     status.textContent =
         "CALCULATING TERMINAL";
 
 
-    // Reset audio.
-    audio.pause();
-
-    try {
-        audio.currentTime = 0;
-    } catch (_) {}
-
-
-    audio.muted =
-        mode === "visual";
-
-
     updateAudioDisplay();
 
 
-    // Wait until player layout exists.
-    requestAnimationFrame(() => {
+    // Wait for player geometry to actually
+    // exist before FitAddon measures it.
 
-        requestAnimationFrame(() => {
+    requestAnimationFrame(
+        () => {
 
-            startRenderer();
+            requestAnimationFrame(
+                () => {
 
-        });
-    });
+                    startRenderer();
+
+                }
+            );
+        }
+    );
 }
+
 
 
 // ======================================================
@@ -299,41 +510,61 @@ function startRenderer() {
     terminal =
         new Terminal({
 
-            cursorBlink: false,
+            cursorBlink:
+                false,
 
-            disableStdin: true,
+            disableStdin:
+                true,
 
-            scrollback: 0,
+            scrollback:
+                0,
 
-            convertEol: false,
+            convertEol:
+                false,
+
+            allowTransparency:
+                false,
+
 
             fontFamily:
-                "Consolas, 'Courier New', monospace",
+                "'JetBrains Mono', Consolas, 'Courier New', monospace",
 
-            fontSize: 11,
+            fontSize:
+                11,
 
-            lineHeight: 1,
+            lineHeight:
+                1,
+
 
             theme: {
 
                 background:
-                    "#020403",
+                    "#050307",
 
                 foreground:
-                    "#66ff99",
+                    "#d8b4fe",
 
                 cursor:
-                    "#66ff99"
+                    "#f472b6",
+
+                cursorAccent:
+                    "#050307",
+
+                selectionBackground:
+                    "#a855f733"
+
             }
         });
 
 
-    // -----------------------------
+
+    // ==================================================
     // FIT
-    // -----------------------------
+    // ==================================================
 
     fitAddon =
-        new FitAddon.FitAddon();
+        new FitAddon
+            .FitAddon();
 
 
     terminal.loadAddon(
@@ -348,9 +579,10 @@ function startRenderer() {
     );
 
 
-    // -----------------------------
+
+    // ==================================================
     // WEBGL
-    // -----------------------------
+    // ==================================================
 
     try {
 
@@ -364,24 +596,27 @@ function startRenderer() {
         );
 
 
-        webglAddon.onContextLoss(
-            () => {
+        webglAddon
+            .onContextLoss(
+                () => {
 
-                console.warn(
-                    "WEBGL CONTEXT LOST"
-                );
-
-
-                try {
-
-                    webglAddon.dispose();
-
-                } catch (_) {}
+                    console.warn(
+                        "XTERM WEBGL CONTEXT LOST"
+                    );
 
 
-                webglAddon = null;
-            }
-        );
+                    try {
+
+                        webglAddon
+                            .dispose();
+
+                    } catch (_) {}
+
+
+                    webglAddon =
+                        null;
+                }
+            );
 
 
         console.log(
@@ -389,51 +624,57 @@ function startRenderer() {
         );
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.warn(
-            "WebGL unavailable",
+            "WebGL unavailable:",
             error
         );
     }
 
 
-    // -----------------------------
-    // Calculate dimensions ONCE
-    // -----------------------------
 
-    requestAnimationFrame(() => {
+    // ==================================================
+    // CALCULATE TERMINAL ONCE
+    // ==================================================
 
-        requestAnimationFrame(() => {
+    requestAnimationFrame(
+        () => {
 
-            fitTerminalWithinBudget();
+            requestAnimationFrame(
+                () => {
 
-
-            lockedCols =
-                terminal.cols;
-
-
-            lockedRows =
-                terminal.rows;
+                    fitTerminalWithinBudget();
 
 
-            console.log(
-                `LOCKED TERMINAL: ${lockedCols}x${lockedRows}`
+                    lockedCols =
+                        terminal.cols;
+
+                    lockedRows =
+                        terminal.rows;
+
+
+                    console.log(
+                        `LOCKED TERMINAL ${lockedCols}x${lockedRows}`
+                    );
+
+
+                    status.textContent =
+                        `CONNECTING ${lockedCols}×${lockedRows}`;
+
+
+                    connectMainframe(
+                        lockedCols,
+                        lockedRows
+                    );
+                }
             );
-
-
-            status.textContent =
-                `CONNECTING ${lockedCols}×${lockedRows}`;
-
-
-            connectMainframe(
-                lockedCols,
-                lockedRows
-            );
-
-        });
-    });
+        }
+    );
 }
+
 
 
 // ======================================================
@@ -446,11 +687,11 @@ function fitTerminalWithinBudget() {
         !terminal ||
         !fitAddon
     ) {
+
         return;
     }
 
 
-    // Start from base font.
     terminal.options.fontSize =
         11;
 
@@ -470,13 +711,19 @@ function fitTerminalWithinBudget() {
 
     const scale =
         Math.max(
+
             colScale,
+
             rowScale,
+
             1
+
         );
 
 
-    if (scale > 1) {
+    if (
+        scale > 1
+    ) {
 
         terminal.options.fontSize =
             Math.ceil(
@@ -489,16 +736,22 @@ function fitTerminalWithinBudget() {
 
 
     console.log(
-        "TERMINAL SIZE:",
+
+        "TERMINAL SIZE",
+
         `${terminal.cols}x${terminal.rows}`,
-        "FONT:",
+
+        "FONT",
+
         terminal.options.fontSize
+
     );
 }
 
 
+
 // ======================================================
-// MAINFRAME CONNECTION
+// MAINFRAME WEBSOCKET
 // ======================================================
 
 function connectMainframe(
@@ -508,7 +761,8 @@ function connectMainframe(
 
     const protocol =
 
-        location.protocol === "https:"
+        location.protocol ===
+        "https:"
 
             ? "wss"
 
@@ -516,50 +770,57 @@ function connectMainframe(
 
 
     const url =
-        `${protocol}://${location.host}/ws?cols=${cols}&rows=${rows}`;
+
+        `${protocol}://${location.host}` +
+        `/ws?cols=${cols}&rows=${rows}`;
 
 
     console.log(
-        "Connecting:",
+        "CONNECT MAINFRAME:",
         url
     );
 
 
     ws =
-        new WebSocket(url);
+        new WebSocket(
+            url
+        );
 
 
     ws.binaryType =
         "arraybuffer";
 
 
-    // --------------------------------
+
+    // ==================================================
     // OPEN
-    // --------------------------------
+    // ==================================================
 
-    ws.onopen = () => {
+    ws.onopen =
+        () => {
 
-        console.log(
-            `MAINFRAME CONNECTED ${cols}x${rows}`
-        );
-
-
-        status.textContent =
-            `MAINFRAME ${cols}×${rows}`;
-    };
+            console.log(
+                `MAINFRAME CONNECTED ${cols}x${rows}`
+            );
 
 
-    // --------------------------------
+            status.textContent =
+                `MAINFRAME ${cols}×${rows}`;
+        };
+
+
+
+    // ==================================================
     // DATA
-    // --------------------------------
+    // ==================================================
 
     ws.onmessage =
         async event => {
 
 
-            // -------------------------
-            // PTY binary data
-            // -------------------------
+            // ------------------------------------------
+            // PTY BINARY OUTPUT
+            // ------------------------------------------
 
             if (
                 event.data
@@ -572,17 +833,23 @@ function connectMainframe(
                     );
 
 
-                // Detect when main.rs
-                // actually switches into
-                // terminal render mode.
-                if (!rendererStarted) {
+                // Detect renderer entering
+                // alternate-screen mode.
+
+                if (
+                    !rendererStarted
+                ) {
 
                     const text =
                         ansiDecoder.decode(
+
                             bytes,
+
                             {
-                                stream: true
+                                stream:
+                                    true
                             }
+
                         );
 
 
@@ -591,14 +858,11 @@ function connectMainframe(
                             startupProbe +
                             text
                         )
-                        .slice(-512);
+                        .slice(
+                            -768
+                        );
 
 
-                    // main.rs sends:
-                    // ESC [?1049h
-                    //
-                    // when entering alternate
-                    // terminal screen.
                     if (
                         startupProbe.includes(
                             "\x1b[?1049h"
@@ -619,10 +883,19 @@ function connectMainframe(
 
 
                         if (
-                            mode === "full"
+                            mode ===
+                            "full"
                         ) {
 
-                            await startAudio();
+                            await syncAudioToRenderer();
+
+                        } else {
+
+                            audio.muted =
+                                true;
+
+                            updateAudioDisplay();
+
                         }
                     }
                 }
@@ -637,75 +910,85 @@ function connectMainframe(
             }
 
 
-            // -------------------------
-            // Text server messages
-            // -------------------------
+
+            // ------------------------------------------
+            // SERVER TEXT MESSAGE
+            // ------------------------------------------
 
             if (
                 typeof event.data ===
                 "string"
             ) {
 
-                terminal.write(
+                terminal?.write(
                     event.data
                 );
             }
         };
 
 
-    // --------------------------------
+
+    // ==================================================
     // ERROR
-    // --------------------------------
+    // ==================================================
 
-    ws.onerror = error => {
+    ws.onerror =
+        error => {
 
-        console.error(
-            "MAINFRAME ERROR",
-            error
-        );
-
-
-        stopAudio();
+            console.error(
+                "MAINFRAME ERROR",
+                error
+            );
 
 
-        status.textContent =
-            "MAINFRAME ERROR";
-    };
+            stopAudio();
 
-
-    // --------------------------------
-    // CLOSE
-    // --------------------------------
-
-    ws.onclose = event => {
-
-        console.log(
-            "MAINFRAME CLOSED",
-            event.code,
-            event.reason
-        );
-
-
-        stopAudio();
-
-
-        rendererStarted =
-            false;
-
-
-        startupProbe =
-            "";
-
-
-        if (
-            state === "playing"
-        ) {
 
             status.textContent =
-                "PLAYBACK COMPLETE";
-        }
-    };
+                "MAINFRAME ERROR";
+        };
+
+
+
+    // ==================================================
+    // CLOSE
+    // ==================================================
+
+    ws.onclose =
+        event => {
+
+            console.log(
+
+                "MAINFRAME CLOSED",
+
+                event.code,
+
+                event.reason
+
+            );
+
+
+            stopAudio();
+
+
+            rendererStarted =
+                false;
+
+            startupProbe =
+                "";
+
+
+            if (
+                state ===
+                "playing"
+            ) {
+
+                status.textContent =
+                    "PLAYBACK COMPLETE";
+            }
+        };
 }
+
 
 
 // ======================================================
@@ -735,8 +1018,9 @@ function queueTerminalData(
 }
 
 
+
 // ======================================================
-// SCHEDULE FLUSH
+// SCHEDULE TERMINAL FLUSH
 // ======================================================
 
 function scheduleTerminalFlush() {
@@ -745,6 +1029,7 @@ function scheduleTerminalFlush() {
         writeScheduled ||
         terminalWriteBusy
     ) {
+
         return;
     }
 
@@ -761,14 +1046,14 @@ function scheduleTerminalFlush() {
 
 
             flushTerminalData();
-
         }
     );
 }
 
 
+
 // ======================================================
-// FLUSH TO XTERM
+// FLUSH TERMINAL DATA
 // ======================================================
 
 function flushTerminalData() {
@@ -778,6 +1063,7 @@ function flushTerminalData() {
         terminalWriteBusy ||
         pendingBytes === 0
     ) {
+
         return;
     }
 
@@ -788,7 +1074,8 @@ function flushTerminalData() {
         );
 
 
-    let offset = 0;
+    let offset =
+        0;
 
 
     for (
@@ -807,8 +1094,11 @@ function flushTerminalData() {
     }
 
 
-    pendingChunks = [];
-    pendingBytes = 0;
+    pendingChunks =
+        [];
+
+    pendingBytes =
+        0;
 
 
     terminalWriteBusy =
@@ -816,7 +1106,9 @@ function flushTerminalData() {
 
 
     terminal.write(
+
         combined,
+
         () => {
 
             terminalWriteBusy =
@@ -824,38 +1116,52 @@ function flushTerminalData() {
 
 
             if (
-                pendingBytes > 0
+                pendingBytes >
+                0
             ) {
 
                 scheduleTerminalFlush();
             }
         }
+
     );
 }
 
 
+
 // ======================================================
-// AUDIO
+// SYNC AUDIO TO RUST RENDERER
 // ======================================================
 
-async function startAudio() {
+async function syncAudioToRenderer() {
 
     if (
-        mode !== "full" ||
-        audioStarted
+        mode !==
+        "full"
     ) {
+
         return;
     }
 
 
     try {
 
-        audio.currentTime = 0;
+        // Rust is now drawing actual frames.
+        // Restart soundtrack at t=0.
 
-        audio.muted = false;
+        audio.currentTime =
+            0;
+
+        audio.muted =
+            false;
 
 
-        await audio.play();
+        if (
+            audio.paused
+        ) {
+
+            await audio.play();
+        }
 
 
         audioStarted =
@@ -863,26 +1169,37 @@ async function startAudio() {
 
 
         console.log(
-            "AUDIO STARTED"
+            "AUDIO SYNCED WITH RENDERER"
         );
 
 
         updateAudioDisplay();
 
 
-    } catch (error) {
+    } catch (
+        error
+    ) {
 
         console.warn(
-            "Audio could not start:",
+            "Audio sync failed:",
             error
         );
 
 
+        audioStarted =
+            false;
+
+
         audioControl.textContent =
-            "[M] AUDIO: ENABLE";
+            "[M] ENABLE AUDIO";
     }
 }
 
+
+
+// ======================================================
+// STOP AUDIO
+// ======================================================
 
 function stopAudio() {
 
@@ -891,7 +1208,8 @@ function stopAudio() {
 
     try {
 
-        audio.currentTime = 0;
+        audio.currentTime =
+            0;
 
     } catch (_) {}
 
@@ -899,26 +1217,40 @@ function stopAudio() {
     audioStarted =
         false;
 
+    audioPrimed =
+        false;
+
 
     updateAudioDisplay();
 }
 
 
+
+// ======================================================
+// TOGGLE AUDIO
+// ======================================================
+
 async function toggleAudio() {
 
-    // Visual mode has no soundtrack.
+    // User selected visual-only but then
+    // explicitly enables audio.
+
     if (
-        mode === "visual"
+        mode ===
+        "visual"
     ) {
 
-        mode = "full";
+        mode =
+            "full";
 
 
         try {
 
-            audio.currentTime = 0;
+            audio.currentTime =
+                0;
 
-            audio.muted = false;
+            audio.muted =
+                false;
 
 
             await audio.play();
@@ -927,8 +1259,13 @@ async function toggleAudio() {
             audioStarted =
                 true;
 
+            audioPrimed =
+                true;
 
-        } catch (error) {
+
+        } catch (
+            error
+        ) {
 
             console.warn(
                 "Audio start failed:",
@@ -943,7 +1280,10 @@ async function toggleAudio() {
     }
 
 
-    // Keep audio timeline running.
+
+    // Keep timeline running.
+    // Just change mute state.
+
     audio.muted =
         !audio.muted;
 
@@ -958,10 +1298,13 @@ async function toggleAudio() {
 
             await audio.play();
 
+
             audioStarted =
                 true;
 
-        } catch (error) {
+        } catch (
+            error
+        ) {
 
             console.warn(
                 "Audio start failed:",
@@ -975,79 +1318,108 @@ async function toggleAudio() {
 }
 
 
+
+// ======================================================
+// AUDIO UI
+// ======================================================
+
 function updateAudioDisplay() {
 
-    if (!audioControl) {
+    if (
+        !audioControl
+    ) {
+
         return;
     }
 
 
     if (
-        mode === "visual"
+        mode ===
+        "visual"
     ) {
 
-        audioControl.textContent =
-            "[M] AUDIO: OFF";
+        audioControl.innerHTML =
+            "<kbd>M</kbd> AUDIO: OFF";
 
         return;
     }
 
 
-    audioControl.textContent =
+    audioControl.innerHTML =
 
         audio.muted
 
-            ? "[M] AUDIO: MUTED"
+            ? "<kbd>M</kbd> AUDIO: MUTED"
 
-            : "[M] AUDIO: ON";
+            : "<kbd>M</kbd> AUDIO: ON";
 }
 
 
+
 // ======================================================
-// DESTROY TERMINAL / WS
+// DESTROY TERMINAL / WEBSOCKET
 // ======================================================
 
 function destroyRenderer() {
 
-    // -------------------------
-    // WebSocket
-    // -------------------------
 
-    if (ws) {
+    // ==================================================
+    // WEBSOCKET
+    // ==================================================
 
-        ws.onopen = null;
-        ws.onmessage = null;
-        ws.onerror = null;
-        ws.onclose = null;
+    if (
+        ws
+    ) {
+
+        ws.onopen =
+            null;
+
+        ws.onmessage =
+            null;
+
+        ws.onerror =
+            null;
+
+        ws.onclose =
+            null;
 
 
         if (
+
             ws.readyState ===
                 WebSocket.OPEN ||
 
             ws.readyState ===
                 WebSocket.CONNECTING
+
         ) {
 
             try {
+
                 ws.close();
+
             } catch (_) {}
         }
 
 
-        ws = null;
+        ws =
+            null;
     }
 
 
-    // -------------------------
-    // WebGL
-    // -------------------------
 
-    if (webglAddon) {
+    // ==================================================
+    // WEBGL
+    // ==================================================
+
+    if (
+        webglAddon
+    ) {
 
         try {
 
-            webglAddon.dispose();
+            webglAddon
+                .dispose();
 
         } catch (_) {}
 
@@ -1057,15 +1429,19 @@ function destroyRenderer() {
     }
 
 
-    // -------------------------
-    // Terminal
-    // -------------------------
 
-    if (terminal) {
+    // ==================================================
+    // TERMINAL
+    // ==================================================
+
+    if (
+        terminal
+    ) {
 
         try {
 
-            terminal.dispose();
+            terminal
+                .dispose();
 
         } catch (_) {}
 
@@ -1079,20 +1455,31 @@ function destroyRenderer() {
         null;
 
 
-    // -------------------------
-    // Buffers
-    // -------------------------
 
-    pendingChunks = [];
-    pendingBytes = 0;
+    // ==================================================
+    // BUFFER RESET
+    // ==================================================
 
-    writeScheduled = false;
-    terminalWriteBusy = false;
+    pendingChunks =
+        [];
+
+    pendingBytes =
+        0;
+
+    writeScheduled =
+        false;
+
+    terminalWriteBusy =
+        false;
 
 
-    lockedCols = 0;
-    lockedRows = 0;
+    lockedCols =
+        0;
+
+    lockedRows =
+        0;
 }
+
 
 
 // ======================================================
@@ -1102,8 +1489,10 @@ function destroyRenderer() {
 async function exitExperience() {
 
     if (
-        state !== "playing"
+        state !==
+        "playing"
     ) {
+
         return;
     }
 
@@ -1119,7 +1508,6 @@ async function exitExperience() {
     rendererStarted =
         false;
 
-
     startupProbe =
         "";
 
@@ -1127,14 +1515,18 @@ async function exitExperience() {
     destroyRenderer();
 
 
-    playerScreen.classList.add(
-        "hidden"
-    );
+    playerScreen
+        .classList
+        .add(
+            "hidden"
+        );
 
 
-    modeScreen.classList.remove(
-        "hidden"
-    );
+    modeScreen
+        .classList
+        .remove(
+            "hidden"
+        );
 
 
     status.textContent =
@@ -1143,31 +1535,35 @@ async function exitExperience() {
 
     state =
         "mode";
-
-
-    // Fullscreen logic disabled for now.
 }
 
 
+
 // ======================================================
-// KEYBOARD
+// KEYBOARD CONTROLS
 // ======================================================
 
 document.addEventListener(
+
     "keydown",
+
     async event => {
 
         const key =
-            event.key.toLowerCase();
+            event.key
+                .toLowerCase();
 
 
-        // -------------------------
-        // READY
-        // -------------------------
+
+        // ==================================================
+        // READY SCREEN
+        // ==================================================
 
         if (
-            state === "ready" &&
-            event.key === "Enter"
+            state ===
+                "ready" &&
+            event.key ===
+                "Enter"
         ) {
 
             enterSystem();
@@ -1176,16 +1572,19 @@ document.addEventListener(
         }
 
 
-        // -------------------------
-        // MODE
-        // -------------------------
+
+        // ==================================================
+        // MODE SCREEN
+        // ==================================================
 
         if (
-            state === "mode"
+            state ===
+            "mode"
         ) {
 
             if (
-                key === "1"
+                key ===
+                "1"
             ) {
 
                 selectMode(
@@ -1197,7 +1596,8 @@ document.addEventListener(
 
 
             if (
-                key === "2"
+                key ===
+                "2"
             ) {
 
                 selectMode(
@@ -1209,7 +1609,34 @@ document.addEventListener(
 
 
             if (
-                event.key === "Enter"
+                event.key ===
+                "ArrowLeft"
+            ) {
+
+                selectMode(
+                    "visual"
+                );
+
+                return;
+            }
+
+
+            if (
+                event.key ===
+                "ArrowRight"
+            ) {
+
+                selectMode(
+                    "full"
+                );
+
+                return;
+            }
+
+
+            if (
+                event.key ===
+                "Enter"
             ) {
 
                 await startExperience();
@@ -1219,16 +1646,19 @@ document.addEventListener(
         }
 
 
-        // -------------------------
-        // PLAYING
-        // -------------------------
+
+        // ==================================================
+        // PLAYER
+        // ==================================================
 
         if (
-            state === "playing"
+            state ===
+            "playing"
         ) {
 
             if (
-                key === "m"
+                key ===
+                "m"
             ) {
 
                 await toggleAudio();
@@ -1238,7 +1668,10 @@ document.addEventListener(
 
 
             if (
-                key === "q"
+                key ===
+                "q" ||
+                event.key ===
+                "Escape"
             ) {
 
                 await exitExperience();
@@ -1247,47 +1680,132 @@ document.addEventListener(
             }
         }
     }
+
 );
 
 
+
 // ======================================================
-// BUTTON EVENTS
+// ENTER BUTTON
 // ======================================================
 
 enterButton.addEventListener(
+
     "click",
+
     enterSystem
+
 );
 
+
+
+// ======================================================
+// MODE CARD CLICK
+// ======================================================
+
+document
+    .querySelectorAll(
+        "[data-mode]"
+    )
+    .forEach(
+        card => {
+
+            card.addEventListener(
+                "click",
+                () => {
+
+                    selectMode(
+                        card.dataset.mode
+                    );
+                }
+            );
+
+
+            card.addEventListener(
+                "dblclick",
+                async () => {
+
+                    selectMode(
+                        card.dataset.mode
+                    );
+
+
+                    await startExperience();
+                }
+            );
+
+
+            card.addEventListener(
+                "keydown",
+                async event => {
+
+                    if (
+                        event.key ===
+                            "Enter" ||
+                        event.key ===
+                            " "
+                    ) {
+
+                        event.preventDefault();
+
+
+                        selectMode(
+                            card.dataset.mode
+                        );
+                    }
+                }
+            );
+        }
+    );
+
+
+
+// ======================================================
+// AUDIO CONTROL
+// ======================================================
 
 audioControl.addEventListener(
+
     "click",
+
     toggleAudio
+
 );
 
 
-// -----------------------------
-// CLICKABLE Q EXIT
-// -----------------------------
 
-if (exitControl) {
+// ======================================================
+// EXIT CONTROL
+// ======================================================
+
+if (
+    exitControl
+) {
 
     exitControl.addEventListener(
+
         "click",
+
         exitExperience
+
     );
 
 
     exitControl.addEventListener(
+
         "keydown",
+
         async event => {
 
             if (
-                event.key === "Enter" ||
-                event.key === " "
+                event.key ===
+                    "Enter" ||
+                event.key ===
+                    " "
             ) {
 
                 event.preventDefault();
+
 
                 await exitExperience();
             }
@@ -1296,13 +1814,75 @@ if (exitControl) {
 }
 
 
+
 // ======================================================
-// IMPORTANT:
-// NO resize FitAddon during playback yet.
+// AUDIO DIAGNOSTICS
+// ======================================================
+
+audio.addEventListener(
+
+    "loadedmetadata",
+
+    () => {
+
+        console.log(
+
+            "AUDIO LOADED",
+
+            `${audio.duration.toFixed(2)}s`
+
+        );
+    }
+
+);
+
+
+audio.addEventListener(
+
+    "error",
+
+    () => {
+
+        console.error(
+
+            "AUDIO FILE ERROR",
+
+            audio.error
+
+        );
+
+
+        if (
+            audioControl
+        ) {
+
+            audioControl.innerHTML =
+                "<kbd>M</kbd> AUDIO ERROR";
+        }
+    }
+
+);
+
+
+
+// ======================================================
+// IMPORTANT
 //
-// xterm and PTY must remain exactly
-// the same dimensions once started.
+// DO NOT FitAddon.fit() during playback.
+//
+// PTY:
+//     lockedCols × lockedRows
+//
+// xterm:
+//     lockedCols × lockedRows
+//
+// Rust:
+//
+//     terminal::size()
+//
+// must all remain identical for one session.
 // ======================================================
+
 
 
 // ======================================================
@@ -1312,5 +1892,9 @@ if (exitControl) {
 selectMode(
     "full"
 );
+
+
+updateAudioDisplay();
+
 
 boot();

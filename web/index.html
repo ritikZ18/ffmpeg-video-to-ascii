@@ -10,36 +10,57 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Software Engineer Happy Dance</title>
+    <meta
+        name="theme-color"
+        content="#08060d"
+    >
+
+    <title>RUST//FRAME — Terminal Video Engine</title>
 
 
-    <!-- App CSS -->
+    <!-- =====================================================
+         APP
+    ====================================================== -->
+
     <link
         rel="stylesheet"
         href="/style.css"
     >
 
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
 
-    <!-- XTERM -->
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap"
+    >
+
+
+    <!-- =====================================================
+         XTERM
+    ====================================================== -->
+
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/css/xterm.css"
     >
 
-
-    <!-- XTERM CORE -->
     <script
         src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.js">
     </script>
 
-
-    <!-- XTERM FIT -->
     <script
         src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.11.0/lib/addon-fit.js">
     </script>
 
-
-    <!-- XTERM WEBGL -->
     <script
         src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.19.0/lib/addon-webgl.js">
     </script>
@@ -49,202 +70,830 @@
 
 <body>
 
-    <!-- CRT overlay -->
-    <div class="crt"></div>
+
+    <!-- =====================================================
+         GLOBAL GEOMETRY
+    ====================================================== -->
+
+    <div
+        class="geometry"
+        aria-hidden="true"
+    >
+
+        <div class="geo-grid"></div>
+
+        <div class="geo-beam geo-beam-a"></div>
+
+        <div class="geo-beam geo-beam-b"></div>
+
+        <div class="geo-orbit geo-orbit-a"></div>
+
+        <div class="geo-orbit geo-orbit-b"></div>
+
+        <div class="geo-diamond geo-diamond-a"></div>
+
+        <div class="geo-diamond geo-diamond-b"></div>
+
+        <div class="geo-node geo-node-a"></div>
+
+        <div class="geo-node geo-node-b"></div>
+
+        <div class="geo-node geo-node-c"></div>
+
+        <div class="geo-cross geo-cross-a">
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="geo-cross geo-cross-b">
+            <span></span>
+            <span></span>
+        </div>
+
+    </div>
 
 
-    <main id="terminal">
 
+    <!-- =====================================================
+         BOOT SCREEN
+    ====================================================== -->
 
-        <!-- =====================================
-             BOOT
-        ====================================== -->
+    <section id="boot-screen">
 
-        <section id="boot-screen">
-
-            <div id="boot-log"></div>
-
-
-            <div
-                id="ready-panel"
-                class="hidden"
-            >
-
-                <p class="ready">
-                    ARE YOU READY?
-                </p>
-
-
-                <button
-                    id="enter-button"
-                    type="button"
-                >
-                    [ ENTER SYSTEM ]
-                </button>
-
-
-                <p class="hint">
-                    PRESS ENTER
-                </p>
-
-            </div>
-
-        </section>
-
-
-        <!-- =====================================
-             MODE SELECT
-        ====================================== -->
-
-        <section
-            id="mode-screen"
-            class="hidden"
-        >
-
-            <p class="dim">
-                RUST//FRAME PLAYBACK PROTOCOL
-            </p>
-
-
-            <p>
-                &gt; SELECT EXPERIENCE
-            </p>
-
-
-            <div class="options">
-
-
-                <!-- VISUAL ONLY -->
-
-                <div
-                    data-mode="visual"
-                >
-
-                    <span class="selector">
-                        &nbsp;
-                    </span>
-
-                    [1] VISUAL ONLY
-
-                    <span class="dim">
-                        // AUDIO MUTED
-                    </span>
-
-                </div>
-
-
-                <!-- FULL -->
-
-                <div
-                    data-mode="full"
-                    class="selected"
-                >
-
-                    <span class="selector">
-                        &gt;
-                    </span>
-
-                    [2] FULL EXPERIENCE
-
-                    <span class="dim">
-                        // DEFAULT
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <p class="hint">
-                [1/2] SELECT
-                &nbsp;&nbsp;
-                [ENTER] EXECUTE
-            </p>
-
-        </section>
-
-
-        <!-- =====================================
-             PLAYER
-        ====================================== -->
-
-        <section
-            id="player-screen"
-            class="hidden"
-        >
+        <div class="app-shell">
 
 
             <!-- HEADER -->
 
-            <header>
+            <header class="shell-header">
 
-                <span>
-                    RUST//FRAME
-                </span>
+                <div class="brand">
+
+                    <div class="brand-mark">
+
+                        <span>
+                            RF
+                        </span>
+
+                    </div>
 
 
-                <span id="status">
-                    INITIALIZING
+                    <div class="brand-copy">
+
+                        <strong>
+                            RUST//FRAME
+                        </strong>
+
+                        <small>
+                            terminal video engine
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="system-health">
+
+                    <div class="system-pulse"></div>
+
+                    <span>
+                        SYSTEM ONLINE
+                    </span>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- MAIN -->
+
+            <div class="hero-layout">
+
+
+                <!-- =========================================
+                     LEFT HERO
+                ========================================== -->
+
+                <section class="hero-copy">
+
+
+                    <div class="hero-index">
+
+                        <span>
+                            01
+                        </span>
+
+                        <span>
+                            SOFTWARE ENGINEERING EXPERIMENT
+                        </span>
+
+                    </div>
+
+
+                    <h1>
+
+                        <span class="title-plain">
+                            VIDEO
+                        </span>
+
+                        <span class="title-arrow">
+                            →
+                        </span>
+
+                        <span class="title-gradient">
+                            TERMINAL
+                        </span>
+
+                    </h1>
+
+
+                    <p class="hero-description">
+
+                        Real-time video, decoded in Rust and
+                        rendered directly in your terminal.
+
+                    </p>
+
+
+
+                    <!-- READY -->
+
+                    <div
+                        id="ready-panel"
+                        class="hidden"
+                    >
+
+                        <button
+                            id="enter-button"
+                            type="button"
+                        >
+
+                            <span>
+                                ENTER NOW
+                            </span>
+
+                            <strong>
+                                ↗
+                            </strong>
+
+                        </button>
+
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- =========================================
+                     RIGHT ENGINEERING CARD
+                ========================================== -->
+
+                <section class="engine-card">
+
+
+                    <!-- CORNERS -->
+
+                    <span class="corner corner-tl"></span>
+                    <span class="corner corner-tr"></span>
+                    <span class="corner corner-bl"></span>
+                    <span class="corner corner-br"></span>
+
+
+
+                    <!-- CARD HEADER -->
+
+                    <div class="engine-header">
+
+                        <div class="window-controls">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+
+                        <span class="engine-file">
+                            pipeline.rs
+                        </span>
+
+
+                        <span class="engine-language">
+                            RUST
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- GRAPHIC -->
+
+                    <div class="engine-graphic">
+
+                        <div class="graphic-core">
+
+                            <strong>
+                                RF
+                            </strong>
+
+                            <span>
+                                FRAME
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- CODE PIPELINE -->
+
+                    <div
+                        class="pipeline-code"
+                        aria-label="Video file to terminal rendering flow"
+                    >
+
+
+                        <div class="code-row">
+
+                            <span class="line-number">
+                                01
+                            </span>
+
+                            <span class="code-key">
+                                source
+                            </span>
+
+                            <span class="code-value">
+                                input.mp4
+                            </span>
+
+                        </div>
+
+
+                        <div class="code-row">
+
+                            <span class="line-number">
+                                02
+                            </span>
+
+                            <span class="code-key">
+                                decoder
+                            </span>
+
+                            <span class="code-value">
+                                ffmpeg / rgb24
+                            </span>
+
+                        </div>
+
+
+                        <div class="code-row">
+
+                            <span class="line-number">
+                                03
+                            </span>
+
+                            <span class="code-key">
+                                geometry
+                            </span>
+
+                            <span class="code-value">
+                                cols × rows*2
+                            </span>
+
+                        </div>
+
+
+                        <div class="code-row">
+
+                            <span class="line-number">
+                                04
+                            </span>
+
+                            <span class="code-key">
+                                renderer
+                            </span>
+
+                            <span class="code-value">
+                                pixel → glyph
+                            </span>
+
+                        </div>
+
+
+                        <div class="code-row">
+
+                            <span class="line-number">
+                                05
+                            </span>
+
+                            <span class="code-key">
+                                color
+                            </span>
+
+                            <span class="code-value">
+                                ANSI truecolor
+                            </span>
+
+                        </div>
+
+
+                        <div class="code-row">
+
+                            <span class="line-number">
+                                06
+                            </span>
+
+                            <span class="code-key">
+                                output
+                            </span>
+
+                            <span class="code-value">
+                                PTY → WebSocket
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- BOOT LOG -->
+
+                    <div class="boot-console">
+                        <div id="boot-log"></div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+
+            <!-- FOOTER -->
+
+            <footer class="shell-footer">
+
+                <div>
+
+                    <span class="footer-index">
+                        001
+                    </span>
+
+                    FFmpeg decoder
+
+                </div>
+
+
+                <div>
+
+                    <span class="footer-index">
+                        002
+                    </span>
+
+                    Rust renderer
+
+                </div>
+
+
+                <div>
+
+                    <span class="footer-index">
+                        003
+                    </span>
+
+                    xterm.js viewport
+
+                </div>
+
+
+                <div>
+                    v0.1.0
+                </div>
+
+            </footer>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         MODE SELECT
+    ====================================================== -->
+
+    <section
+        id="mode-screen"
+        class="hidden"
+    >
+
+        <div class="mode-shell">
+
+
+            <header class="mode-topbar">
+
+                <div class="brand">
+
+                    <div class="brand-mark">
+                        <span>RF</span>
+                    </div>
+
+                    <div class="brand-copy">
+
+                        <strong>
+                            RUST//FRAME
+                        </strong>
+
+                        <small>
+                            playback configuration
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <span class="mode-stage">
+                    STAGE 02 / 03
                 </span>
 
             </header>
 
 
-            <!-- MAIN TERMINAL -->
 
-            <div id="render-area">
+            <div class="mode-content">
 
-                <div id="xterm"></div>
+
+                <div class="mode-intro">
+
+                    <div class="hero-index">
+
+                        <span>
+                            02
+                        </span>
+
+                        <span>
+                            SIGNAL CONFIGURATION
+                        </span>
+
+                    </div>
+
+
+                    <h2>
+
+                        Choose your
+
+                        <span class="title-gradient">
+                            experience.
+                        </span>
+
+                    </h2>
+
+
+                    <p>
+
+                        The video pipeline remains identical.
+                        Choose whether the original soundtrack
+                        joins the terminal stream.
+
+                    </p>
+
+                </div>
+
+
+
+                <div class="mode-grid">
+
+
+                    <!-- VISUAL -->
+
+                    <article
+                        class="mode-card"
+                        data-mode="visual"
+                        tabindex="0"
+                    >
+
+                        <div class="mode-card-grid"></div>
+
+
+                        <div class="mode-card-number">
+                            01
+                        </div>
+
+
+                        <span class="selector">
+                            &nbsp;
+                        </span>
+
+
+                        <div class="mode-icon visual-icon">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+
+                        <h3>
+                            VISUAL ONLY
+                        </h3>
+
+
+                        <p>
+
+                            Pure terminal rendering.
+                            Original soundtrack remains muted.
+
+                        </p>
+
+
+                        <div class="mode-tags">
+
+                            <span>
+                                RGB24
+                            </span>
+
+                            <span>
+                                ANSI
+                            </span>
+
+                            <span>
+                                MUTED
+                            </span>
+
+                        </div>
+
+
+                        <div class="mode-card-footer">
+
+                            <span>
+                                KEY 1
+                            </span>
+
+                            <span>
+                                VIDEO SIGNAL
+                            </span>
+
+                        </div>
+
+                    </article>
+
+
+
+                    <!-- FULL -->
+
+                    <article
+                        class="mode-card selected"
+                        data-mode="full"
+                        tabindex="0"
+                    >
+
+                        <div class="mode-card-grid"></div>
+
+
+                        <div class="mode-card-number">
+                            02
+                        </div>
+
+
+                        <span class="selector">
+                            &gt;
+                        </span>
+
+
+                        <div class="mode-icon audio-icon">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+
+                        <h3>
+                            FULL EXPERIENCE
+                        </h3>
+
+
+                        <p>
+
+                            Real-time terminal renderer with the
+                            original audio track synchronized
+                            at frame startup.
+
+                        </p>
+
+
+                        <div class="mode-tags">
+
+                            <span>
+                                RGB24
+                            </span>
+
+                            <span>
+                                ANSI
+                            </span>
+
+                            <span>
+                                AUDIO
+                            </span>
+
+                        </div>
+
+
+                        <div class="mode-card-footer">
+
+                            <span>
+                                KEY 2
+                            </span>
+
+                            <span>
+                                DEFAULT
+                            </span>
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+
+
+                <div class="mode-controls">
+
+                    <span>
+
+                        <kbd>
+                            1
+                        </kbd>
+
+                        <kbd>
+                            2
+                        </kbd>
+
+                        SELECT
+
+                    </span>
+
+
+                    <span>
+
+                        <kbd>
+                            ENTER
+                        </kbd>
+
+                        EXECUTE
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         PLAYER
+    ====================================================== -->
+
+    <section
+        id="player-screen"
+        class="hidden"
+    >
+
+
+        <header class="player-header">
+
+
+            <div class="player-brand">
+
+                <div class="mini-brand-mark">
+                    RF
+                </div>
+
+                <span>
+                    RUST//FRAME
+                </span>
 
             </div>
 
 
-            <!-- FOOTER -->
+            <div class="player-center">
 
-            <footer>
+                <span class="player-signal"></span>
 
- <span
-        id="exit-control"
-        role="button"
-        tabindex="0"
-    >
-        [Q] EXIT
-    </span>
-
-
-                <span
-                    id="audio-control"
-                    role="button"
-                    tabindex="0"
-                >
-                    [M] AUDIO: ON
+                <span id="status">
+                    INITIALIZING
                 </span>
 
-
-            </footer>
-
-
-        </section>
-
-    </main>
+            </div>
 
 
-    <!--
-        AUDIO ONLY.
+            <div class="player-meta">
 
-        Browser plays the audio track from input.mp4.
-        Video itself is never visually displayed.
-    -->
+                LIVE TERMINAL OUTPUT
+
+            </div>
+
+        </header>
+
+
+
+        <div id="render-area">
+
+            <div class="render-corner render-tl"></div>
+            <div class="render-corner render-tr"></div>
+            <div class="render-corner render-bl"></div>
+            <div class="render-corner render-br"></div>
+
+            <div id="xterm"></div>
+
+        </div>
+
+
+
+        <footer class="player-footer">
+
+
+            <span
+                id="exit-control"
+                class="player-control"
+                role="button"
+                tabindex="0"
+            >
+
+                <kbd>
+                    Q
+                </kbd>
+
+                EXIT
+
+            </span>
+
+
+            <span class="player-footer-center">
+
+                RGB24
+                <i></i>
+                ANSI TRUECOLOR
+                <i></i>
+                PTY
+
+            </span>
+
+
+            <span
+                id="audio-control"
+                class="player-control"
+                role="button"
+                tabindex="0"
+            >
+
+                <kbd>
+                    M
+                </kbd>
+
+                AUDIO: ON
+
+            </span>
+
+        </footer>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         AUDIO
+    ====================================================== -->
 
     <audio
-    id="audio"
-    src="/assets/audio.m4a"
-    preload="auto">
-</audio>
+        id="audio"
+        src="/assets/audio.m4a"
+        preload="auto"
+    ></audio>
 
 
-    <!-- Application -->
+
+    <!-- =====================================================
+         APPLICATION
+    ====================================================== -->
+
     <script src="/app.js"></script>
+
 
 </body>
 
